@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "path": "skills/productivity/powerpoint",
+  "commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+  "sha256": "b71d29d9809c4464d7f8d10afabf4f22f6a26c647cf7aacb6f9faf196ebe82f2",
+  "adapter": "yanshu-document-runtime-v1"
+}

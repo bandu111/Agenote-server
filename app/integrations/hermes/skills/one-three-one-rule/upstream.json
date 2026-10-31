@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "commit": "1c9433897c7b8a3b2754a84875e8f86d0a42991a",
+  "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/1c9433897c7b8a3b2754a84875e8f86d0a42991a/optional-skills/communication/one-three-one-rule/SKILL.md",
+  "sha256": "31ae7d7c5fc127d7f49d3282c3f93e3e3c3afa295f9bbd6660cc88ca9248248b",
+  "adapter": "yanshu-one-three-one-rule-v1"
+}

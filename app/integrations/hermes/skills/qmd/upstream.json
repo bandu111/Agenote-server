@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "commit": "626bc82f13d975dc88fbeda5076f0bf442856b20",
+  "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/626bc82f13d975dc88fbeda5076f0bf442856b20/optional-skills/research/qmd/SKILL.md",
+  "sha256": "9ee7a5c501db706960e768754fe1536419b39e585180c2a64ed9e19d9a5799a6",
+  "adapter": "yanshu-qmd-v1"
+}

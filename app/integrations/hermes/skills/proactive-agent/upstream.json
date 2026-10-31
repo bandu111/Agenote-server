@@ -1,0 +1,9 @@
+{
+  "repository": "https://clawhub.ai/halthelobster/skills/proactive-agent",
+  "commit": "registry:3.1.0",
+  "version": "3.1.0",
+  "url": "https://clawhub.ai/api/v1/skills/proactive-agent?owner=halthelobster",
+  "sha256": "571521d9f6f38b3ec9f073d7bdec47170a35e9c78556954ac7f0f860ab12873b",
+  "adapter": "yanshu-proactive-agent-v1",
+  "license": "MIT (declared in SKILL.md License & Credits; registry license field is empty)"
+}

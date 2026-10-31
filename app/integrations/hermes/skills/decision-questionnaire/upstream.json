@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "commit": "b1ff8722a53ee223485ac9804945acf07ef5c601",
+  "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/b1ff8722a53ee223485ac9804945acf07ef5c601/optional-skills/productivity/decision-questionnaire/SKILL.md",
+  "sha256": "84a781708b86a797e41d4a0b9234d4da48f95d14fc9cee23a0eb2cf8574e8ca2",
+  "adapter": "yanshu-decision-questionnaire-v1"
+}

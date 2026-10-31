@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "commit": "a6ede70c2ad2e39cead64113a2fa26ae770f24ff",
+  "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/a6ede70c2ad2e39cead64113a2fa26ae770f24ff/skills/productivity/meeting-action-items/SKILL.md",
+  "sha256": "1902f782551da96ee1f9b34d6f13af627f06150a498d874b0cc2a75d06d35aa8",
+  "adapter": "yanshu-meeting-actions-v1"
+}

@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "path": "skills/productivity/pdf",
+  "commit": "f97608f178d1ffeca59860195ab7da295f7c8e5f",
+  "sha256": "c16b9c159a3a0b49353bfcd10c498b02aef3d319207b1019aa7dc8db129d06ab",
+  "adapter": "yanshu-document-runtime-v1"
+}

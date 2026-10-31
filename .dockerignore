@@ -1,0 +1,13 @@
+**
+!requirements.txt
+!alembic.ini
+!app/
+!app/**
+!migrations/
+!migrations/**
+!scripts/
+!scripts/hermes_meeting_worker.py
+!scripts/setup_action_checkpoints.py
+**/__pycache__/**
+**/*.pyc
+**/.env*

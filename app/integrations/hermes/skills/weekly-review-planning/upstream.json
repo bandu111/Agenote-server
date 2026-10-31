@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "commit": "99fa93035dd5c50a8f6312f2172de1593b453cd7",
+  "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/99fa93035dd5c50a8f6312f2172de1593b453cd7/skills/productivity/weekly-review-planning/SKILL.md",
+  "sha256": "a689257facb937cfca9bc5507dd9e729f287f0cd3f6abbf73448eb25f73fbaab",
+  "adapter": "yanshu-weekly-review-planning-v1"
+}

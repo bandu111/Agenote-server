@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/NousResearch/hermes-agent",
+  "commit": "c49fa88b80753071e7b7bb83e2882232e43e87c0",
+  "url": "https://raw.githubusercontent.com/NousResearch/hermes-agent/c49fa88b80753071e7b7bb83e2882232e43e87c0/skills/productivity/document-to-action-items/SKILL.md",
+  "sha256": "8a7556754aca2a7d04d38847131fb4db8d6705fa2106fcb154279e26117b41ee",
+  "adapter": "yanshu-document-to-action-items-v1"
+}

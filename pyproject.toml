@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yanshu-server"
+version = "0.1.0"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "fastapi==0.139.0",
+  "uvicorn==0.51.0",
+  "SQLAlchemy==2.0.51",
+  "psycopg[binary]==3.3.4",
+  "alembic==1.18.5",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.14.2",
+  "email-validator==2.3.0",
+  "pwdlib[argon2]==0.3.1",
+  "PyJWT==2.13.0",
+  "langgraph==1.2.9",
+  "langgraph-checkpoint-postgres==3.2.0",
+  "langchain-core==1.4.9",
+  "langchain-openai==1.1.10",
+  "langchain-deepseek==1.1.0",
+  "openai==2.24.0",
+  "llama-index-core==0.14.25",
+  "llama-index-retrievers-bm25==0.8.0",
+  "llama-index-readers-file==0.7.0",
+  "openpyxl==3.1.5",
+  "python-pptx==1.0.2",
+  "docx2txt==0.9",
+  "httpx==0.28.1",
+  "Pillow>=11,<13",
+  "pypdf==6.14.2",
+  "cryptography>=46,<51",
+  "numpy>=2,<3"
+]
+
+[project.optional-dependencies]
+meeting = [
+  "hermes-agent @ git+https://github.com/NousResearch/hermes-agent.git@f97608f178d1ffeca59860195ab7da295f7c8e5f"
+]
+test = [
+  "httpx==0.28.1",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.3.0"
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["migrations*", "tests*", "docs*", "scripts*"]
+
+[tool.setuptools.package-data]
+"app.integrations.hermes" = ["skills/*/SKILL.md", "skills/*/upstream.json", "skills/*/LICENSE", "skills/*/references/*.md", "skills/*/scripts/*.py"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

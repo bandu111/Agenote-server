@@ -1,0 +1,6 @@
+{
+  "name": "yanshu-qmd-adapter",
+  "private": true,
+  "type": "module",
+  "dependencies": {"@tobilu/qmd": "2.8.3"}
+}
