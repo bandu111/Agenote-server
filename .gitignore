@@ -21,3 +21,38 @@ output/
 *.pem
 *.key
 node_modules/
+tools/qmd/node_modules/
+# 根目录只保留后端工程必需内容
+/*
+!/.gitignore
+!/.gitattributes
+!/.dockerignore
+!/README.md
+!/.env.example
+!/alembic.ini
+!/compose.yaml
+!/pyproject.toml
+!/requirements*.txt
+!/app/
+!/migrations/
+!/tests/
+!/scripts/
+!/tools/
+
+# 仅保留初始化及运行脚本
+/scripts/*
+!/scripts/bootstrap_local.py
+!/scripts/init-db.sh
+!/scripts/hermes_meeting_worker.py
+!/scripts/setup_action_checkpoints.py
+!/scripts/serve.py
+!/scripts/setup_voiceprint_local.py
+
+# 仅保留 QMD 运行文件
+/tools/*
+!/tools/qmd/
+/tools/qmd/*
+!/tools/qmd/package.json
+!/tools/qmd/package-lock.json
+!/tools/qmd/server.mjs
+!/tools/qmd/smoke.mjs

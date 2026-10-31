@@ -192,7 +192,12 @@ class MeetingArchiveService:
                     draft = MinutesDraft.model_validate(result)
                 else:
                     draft = MinutesDraft()
-                title = await title_task
+                try:
+                    # Naming is optional enrichment. A slow title must not hold
+                    # an already completed, evidence-validated minutes draft.
+                    title = await asyncio.wait_for(asyncio.shield(title_task), timeout=.25)
+                except TimeoutError:
+                    title = content['title']
                 title = title_from_topics(content['title'], title, draft.topics)
                 markdown = render_minutes(title, draft, content["utterances"])
             except (ValidationError, ValueError, TypeError, KeyError) as error:

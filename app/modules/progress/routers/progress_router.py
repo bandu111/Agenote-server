@@ -11,6 +11,7 @@ from app.modules.progress.schemas.progress import (
     GoalInput,
     GoalUpdate,
     GoalRemovalInput,
+    GoalConfirmInput,
     CommitmentUpdate,
     RescheduleInput,
     ApprovalInput,
@@ -67,6 +68,13 @@ async def update_goal(
 @router.post("/goals/{item_id}/remove", response_model=ApiResponse[dict])
 async def remove_goal(item_id: str, payload: GoalRemovalInput, session: Session, identity: Identity):
     return ApiResponse(code=200, data=await ProgressService(session).remove_goal(
+        identity[0].id, item_id, payload.version, payload.note
+    ))
+
+
+@router.post("/goals/{item_id}/confirm", response_model=ApiResponse[dict])
+async def confirm_goal(item_id: str, payload: GoalConfirmInput, session: Session, identity: Identity):
+    return ApiResponse(code=200, data=await ProgressService(session).confirm_goal(
         identity[0].id, item_id, payload.version, payload.note
     ))
 

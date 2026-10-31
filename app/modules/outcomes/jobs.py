@@ -20,6 +20,7 @@ from app.modules.outcomes.models import OutcomeRun
 KIND = "role_outcome"
 ASSISTANT_KIND = "assistant_query"
 PREPARATION_KIND = "meeting_preparation"
+MIN_AUTO_REPORT_MS = 3 * 60 * 1000
 KIND_POLICY = {
     KIND: {"readiness": "meeting_archive", "handler": "role_outcome", "result": "role_report", "timeout": 150, "retrySeconds": 30},
     "meeting_question": {"readiness": "meeting_archive", "handler": "meeting_question", "result": "question_analysis", "timeout": 90, "retrySeconds": 5},
@@ -46,6 +47,8 @@ def ready(meeting, archive):
 
 async def enqueue(session, meeting, archive, *, request_key="automatic", request=""):
     if not ready(meeting, archive):
+        return None
+    if request_key == "automatic" and int(meeting.content.get("elapsed_ms", 0) or 0) < MIN_AUTO_REPORT_MS:
         return None
     await session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:key))"), {"key": "outcome:" + meeting.owner_id})
     key = intent(meeting.id, archive.revision, request_key)
@@ -126,6 +129,7 @@ async def _meeting_payload(session, row, meeting, archive, user):
         "profession": profession,
         "scenarios": (profile.get("personalization") or {}).get("scenarios", []),
         "title": archive.title,
+        "elapsedMs": int(meeting.content.get("elapsed_ms", 0) or 0),
         "minutes": {
             key: value for key, value in (
                 archive.details or legacy_details(archive.markdown, meeting.content["utterances"])

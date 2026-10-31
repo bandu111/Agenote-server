@@ -56,11 +56,13 @@ async def enrich_relations(service, owner, result):
             item['goalId'] = ''
             item['goalLinkBasis'] = 'unavailable'
         elif goal and item.get('goalLinkBasis') == 'reviewed_candidate':
-            from app.modules.progress.services.goal_evidence import certain_clause, explicit_milestones
+            from app.modules.progress.services.goal_evidence import explicit_milestones
+            from app.modules.progress.services.goal_continuity import mentions
             sources = {u['id']:u for u in (meeting.content['utterances'] if meeting else [])}
             words = [sources[k].get('correction') or sources[k]['raw']
                 for event in item.get('sourceEvents', []) for k in event.get('evidence_ids', []) if k in sources]
-            if not (len(goal.get('condition','')) >= 6 and any(certain_clause(w,goal['condition']) for w in words)) and not explicit_milestones(goal, words):
+            # 与写入时的依据保持一致：复述交付条件、明确续接具名目标或命中里程碑。
+            if not mentions(goal, words) and not explicit_milestones(goal, words):
                 item['goalId'] = ''
                 item['goalLinkBasis'] = 'unconfirmed_candidate'
         source = next((u for u in (meeting.content['utterances'] if meeting else []) if u['id'] == evidence.get('id')), None)

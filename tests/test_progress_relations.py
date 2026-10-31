@@ -64,3 +64,23 @@ async def test_legacy_candidate_goal_without_source_link_is_not_shown(client, ap
         await db.commit()
     item = (await client.get('/api/v1/progress', headers=headers)).json()['data']['commitments'][0]
     assert item['goalId'] == '' and item['goalLinkBasis'] == 'unconfirmed_candidate'
+
+
+async def test_reviewed_link_by_named_goal_continuation_is_kept_on_read(client, app):
+    headers = await account(client)
+    data = await projected(client, app, headers)
+    async with app.state.database.sessions() as db:
+        meeting = await db.scalar(select(Meeting).where(Meeting.client_id == 'real-progress-session'))
+        utterances = [dict(u) for u in meeting.content['utterances']]
+        # 原话未复述交付条件，但明确续接具名目标；写入时已接受，读回不能再丢弃。
+        utterances[1]['raw'] = '继续推进移动端联调验收目标，我方承诺周三提交报告。'
+        meeting.content = {**meeting.content, 'utterances':utterances}
+        goal = await db.get(ProgressItem, data['goals'][0]['id'])
+        goal.content = {**goal.content, 'title':'移动端联调验收', 'condition':'双端兼容性全部用例通过'}
+        row = await db.get(ProgressItem, data['commitments'][0]['id'])
+        from app.modules.meetings.services.business_guard import transcript_hashes
+        row.content = {**row.content, 'sourceEvidenceHashes':{'c':transcript_hashes(utterances)['c']},
+            'goalId':goal.id, 'goalLinkBasis':'reviewed_candidate'}
+        await db.commit()
+    item = (await client.get('/api/v1/progress', headers=headers)).json()['data']['commitments'][0]
+    assert item['goalId'] == data['goals'][0]['id'] and item['goalLinkBasis'] == 'reviewed_candidate'

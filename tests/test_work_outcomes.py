@@ -79,7 +79,7 @@ async def test_worker_persists_report_and_does_not_rerun_finished_job(client, ap
     async with app.state.database.sessions() as session:
         owner = await session.scalar(select(User).where(User.email == 'yan@example.com'))
         owner.profile = {**(owner.profile or {}), 'outcome_preferences': {'autoAnalyze': True, 'enabledAt': (now() - timedelta(minutes=1)).isoformat()}}
-        meeting = Meeting(id='worker-meeting', owner_id=owner.id, client_id='worker-client', revision=1, content={'ended': True, 'utterances': [{'id': 'u', 'raw': '接口延迟增加，需要验证日志。', 'at': 1000}]})
+        meeting = Meeting(id='worker-meeting', owner_id=owner.id, client_id='worker-client', revision=1, content={'ended': True, 'elapsed_ms': 180000, 'utterances': [{'id': 'u', 'raw': '接口延迟增加，需要验证日志。', 'at': 1000}]})
         session.add(meeting)
         await session.flush()
         archive = MeetingArchive(id='worker-archive', meeting_id=meeting.id, owner_id=owner.id, revision=1, title='接口验证', markdown='text', details={'summary': '延迟需要排查'})
@@ -145,7 +145,7 @@ async def test_automatic_scan_only_completed_current_new_meetings(client, app):
         user = await session.scalar(select(User).where(User.email == 'yan@example.com'))
         user.profile = {**(user.profile or {}), 'outcome_preferences': {'autoAnalyze': True, 'enabledAt': (stamp - timedelta(minutes=10)).isoformat()}}
         for name, ended, started, revision in [('eligible', True, stamp - timedelta(minutes=5), 1), ('active', False, stamp - timedelta(minutes=5), 1), ('old-checkbox-update', True, stamp - timedelta(days=1), 1), ('stale-archive', True, stamp - timedelta(minutes=5), 2)]:
-            meeting = Meeting(id=name, owner_id=user.id, client_id=name, revision=revision, content={'ended': ended, 'started_at': started.isoformat(), 'elapsed_ms': 60000, 'utterances': [{'id': 'u', 'raw': '待验证的问题', 'at': 1}]})
+            meeting = Meeting(id=name, owner_id=user.id, client_id=name, revision=revision, content={'ended': ended, 'started_at': started.isoformat(), 'elapsed_ms': 180000, 'utterances': [{'id': 'u', 'raw': '待验证的问题', 'at': 1}]})
             session.add(meeting)
             await session.flush()
             session.add(MeetingArchive(id='a-' + name, meeting_id=name, owner_id=user.id, revision=1, title='会议', markdown='真实归档', details={'summary': '需要分析的问题'}, updated_at=stamp))

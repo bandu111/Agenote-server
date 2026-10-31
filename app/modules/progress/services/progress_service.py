@@ -41,9 +41,12 @@ def output(row):
         projection = value.pop("milestoneProjection", None)
         if projection and "milestones" not in row.overrides:
             value["milestones"] = projection["milestones"]
-            if "status" not in row.overrides and value.get("status") == "pending" and any(
-                m["status"] != "pending" for m in value["milestones"]
-            ):
+        if "status" not in row.overrides and value.get("status") in {"pending", "active"}:
+            milestones = value.get("milestones", [])
+            # 会议陈述和履约核验都能推进阶段；全部节点完成即目标完成，用户确认后不再停留在待确认。
+            if milestones and all(m["status"] == "completed" for m in milestones):
+                value["status"] = "completed"
+            elif value.get("confirmed") or any(m["status"] != "pending" for m in milestones):
                 value["status"] = "active"
     if row.kind == "commitment":
         if "status" in row.overrides:
@@ -448,6 +451,25 @@ class ProgressService:
             raise HTTPException(409, 'progress_version_conflict')
         at = datetime.now(timezone.utc).isoformat()
         changes = {'removed': True, 'removedAt': at, 'status': 'paused'}
+        row.overrides = {**row.overrides, **changes}
+        row.version += 1
+        row.history = [*row.history, {'at': at, 'description': note.strip(),
+            'actorUserId': owner_id, 'version': row.version, 'changes': changes}]
+        await self.session.commit()
+        return output(row)
+
+    async def confirm_goal(self, owner_id, item_id, version, note):
+        """用户确认会议提取的目标成立；只去掉待确认，不改节点，后续进度仍按里程碑推进。"""
+        await self._lock_owner(owner_id)
+        row = await self.repository.get(owner_id, item_id, lock=True)
+        if row is None or row.kind != 'goal' or output(row).get('removed'):
+            raise HTTPException(404, 'progress_not_found')
+        if output(row).get('confirmed'):
+            return output(row)
+        if row.version != version:
+            raise HTTPException(409, 'progress_version_conflict')
+        at = datetime.now(timezone.utc).isoformat()
+        changes = {'confirmed': True, 'confirmedAt': at}
         row.overrides = {**row.overrides, **changes}
         row.version += 1
         row.history = [*row.history, {'at': at, 'description': note.strip(),

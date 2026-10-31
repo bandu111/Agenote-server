@@ -62,3 +62,26 @@ async def test_archive_persists_title_and_old_client_cannot_restore_placeholder(
     synced = await client.post('/api/v1/meetings/sync', headers=headers, json=source)
     assert synced.status_code == 200, synced.text
     assert synced.json()['data']['title'] == '项目交付与验收安排'
+
+
+async def test_slow_optional_title_does_not_hold_completed_minutes(client, app, monkeypatch):
+    import asyncio
+    from tests.test_meetings import account, meeting
+    headers = await account(client)
+    source = {**meeting(), 'ended': True, 'title': '录音会议'}
+    await client.post('/api/v1/meetings/sync', headers=headers, json=source)
+    blocked = asyncio.Event()
+    cancelled = asyncio.Event()
+    async def title(*args):
+        try:
+            await blocked.wait()
+        finally:
+            cancelled.set()
+    monkeypatch.setattr('app.modules.meetings.services.meeting_archive_service.suggest_title', title)
+    monkeypatch.setattr(app.state.meeting_analysis.agents.provider, 'run', AsyncMock(return_value={
+        'summary':'先完成接口测试。', 'topics':[{'title':'接口测试安排','text':'先测试再上线。','evidence_ids':['u1'],'points':[]}],
+        'decisions':[], 'actions':[], 'open_questions':[]}))
+    result = await asyncio.wait_for(client.post(f"/api/v1/meetings/{source['id']}/archive", headers=headers), timeout=2)
+    assert result.status_code == 200, result.text
+    assert result.json()['data']['meetingTitle'] == '接口测试安排'
+    assert cancelled.is_set()

@@ -44,6 +44,11 @@ class GoalRemovalInput(StrictModel):
     note: str = Field(default="用户移除目标，保留原始记录", min_length=1, max_length=1000)
 
 
+class GoalConfirmInput(StrictModel):
+    version: int = Field(ge=1)
+    note: str = Field(default="用户在目标详情确认目标", min_length=1, max_length=1000)
+
+
 class CommitmentUpdate(StrictModel):
     version: int = Field(ge=1)
     status: Literal["planned", "active", "claimed", "verified", "withdrawn"]

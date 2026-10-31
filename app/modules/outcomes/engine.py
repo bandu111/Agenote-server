@@ -111,7 +111,20 @@ async def analyze(provider,session,owner,payload,*,repair=False):
     plan_raw=await provider.run('outcome_plan',PLAN,
         {**payload,'role_lens':lens,'capabilities':capabilities})
     plan=Plan.model_validate(schema_payload(plan_raw,Plan))
-    if not plan.worthwhile:return {'skipped':True,'reason':'no_additional_question'}
+    forced = int(payload.get('elapsedMs', 0) or 0) >= 3 * 60 * 1000
+    if not plan.worthwhile and not forced:
+        return {'skipped':True,'reason':'no_additional_question'}
+    if forced and not plan.worthwhile:
+        plan = plan.model_copy(update={
+            'worthwhile': True,
+            'question': plan.question or '这场会议有哪些需要跟进的重点？',
+            'analysis_goal': plan.analysis_goal or '从会议证据提炼职业相关的重点、风险和下一步',
+            'metrics': plan.metrics or ['会议中明确的时间、数值和行动项'],
+            'required_sources': plan.required_sources or ['会议纪要和原始逐字稿'],
+            'methods': plan.methods or ['evidence_review'],
+            'deliverable': plan.deliverable or '会议重点分析报告',
+            'value_reason': plan.value_reason or '为超过三分钟的会议提供可追溯的重点整理',
+        })
     if not all([plan.analysis_goal,plan.metrics,plan.required_sources,plan.methods,plan.deliverable,plan.value_reason]):
         raise ValueError('incomplete_role_analysis_plan')
     evidence=dict(payload['evidence']);tool_calls=[]

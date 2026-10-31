@@ -43,43 +43,73 @@ def clauses(source):
     return re.split(r'[，,。；;！？?\n]', source.get('correction') or source['raw'])
 
 
+STATUS_WORDS = r'尚未|还没|没有|未完成|待完成|待开始|完成|通过|结束|修复|解决|交付|做完|搞定|弄好|做好|确认|正在|进行中|推进中|开发中|处理中|测试中|开始了|已开始|在做|在弄'
+
+
+def spoken_clauses(source, title, names):
+    """“核心开发这部分，我们已经完成了”把状态放在下一分句；仅在下一分句不点名其他节点时合并。"""
+    parts = clauses(source)
+    for index, clause in enumerate(parts):
+        yield clause
+        if title not in clause or re.search(STATUS_WORDS, clause.replace(title, '')):
+            continue
+        following = parts[index + 1] if index + 1 < len(parts) else ''
+        if following and not any(name in following for name in names):
+            yield clause + following
+
+
 def milestone_title(title):
     """分离模型附在步骤名后的进度陈述，不用语义相似度猜节点身份。"""
     return re.sub(r'(?:已经完成|已完成|正在进行|进行中|尚未开始|还没开始|尚未完成|还没完成)$', '', title).strip()
 
 
-def reported_milestones(milestones, sources, session_id=None):
+def milestone_core(title):
+    """“完成核心功能开发”口头常说成“核心功能开发完成了”；只去操作性前缀和通用后缀，剩余不足四字时保留原名。"""
+    core = re.sub(r'^(?:完成|执行|推进|开展|进行|实施|交付|提交|提供|编写)', '', title)
+    core = re.sub(r'(?:工作|事项|任务|阶段|环节)$', '', core).strip()
+    return core if len(core) >= 4 else title
+
+
+def reported_milestones(milestones, sources, session_id=None, *, own_ids=None, contested=()):
     """只更新已存在、可逐字定位的节点，不把计划和否定句当作已完成。"""
     result = deepcopy(milestones)
+    cores = {m['title']: milestone_core(m['title']) for m in result}
     for milestone in result:
         if milestone.get('statusBasis') == 'meeting_reported' and milestone.get('evidenceSessionId') == session_id:
             milestone['status'] = 'pending'
             for field in ['statusBasis', 'evidenceIds', 'evidenceSessionId', 'quote']:
                 milestone.pop(field, None)
-        title = milestone['title']
+        # 争议节点仍按原名限定来源；逐字定位使用去掉操作前缀后的节点名。
+        name = milestone['title']
+        title = cores[name]
         if len(title) < 4:
             continue
+        # 被本节点名包含的其他节点（如“核心功能开发”与“完成核心功能开发”）不能算作另点名了别的节点。
+        others = [core for other, core in cores.items() if other != name and core not in title]
         for source in sources:
             if source.get('withdrawn') or source.get('turn_status', 'complete') != 'complete':
                 continue
-            for clause in clauses(source):
+            if name in contested and own_ids is not None and source['id'] not in own_ids:
+                continue
+            for clause in spoken_clauses(source, title, others):
                 comparable = re.sub(r'已经|尚未|正在|还没|仍在|已', '', clause)
                 if title not in clause and title not in comparable:
                     continue
-                if re.search(r'如果|假如|假设|计划|准备|希望|预计|争取|可能|建议|是否|吗|若', clause):
+                if re.search(r'如果|假如|假设|(?<!按)(?<!按照)计划|准备|希望|预计|争取|可能|建议|是否|吗|若', clause):
                     continue
                 # “不能确认已完成”与否定的执行命令都不产生肯定进度。
                 if re.search(r'不能确认|无法确认|尚待确认|不要|不再|取消|撤回|并非|不是|不算|不代表|标为|显示为|改成|记作|标记为', clause):
                     continue
-                if any(other['title'] != title and other['title'] in clause for other in result) and not re.search(r'均|都|全部', clause):
+                if any(other in clause for other in others) and not re.search(r'均|都|全部', clause):
                     continue
                 state = None
                 if re.search(r'尚未|还没|没有|未完成|待完成|待开始|尚未开始', clause):
                     state = 'pending'
-                elif re.search(r'已(?:经)?(?:开发|测试|部署|联调)?完成|已(?:经)?(?:通过|结束|修复|解决|交付)|完成了|已经做完', clause) or (
+                # “开发完了”“已经提交了”“验收通过了”是口头完成陈述；仅说“提交”“开发”不算完成。
+                elif re.search(r'已(?:经)?(?:开发|测试|部署|联调)?完成|已(?:经)?(?:通过|结束|修复|解决|交付|提交|上线|发布|验收)|完成了|结束了|通过了|做完了?|(?:写|改|开发|测试|联调|部署|验收|评审)完了|搞定了|弄好了|做好了', clause) or (
                         title.endswith('确认') and re.search(r'已(?:经)?确认', clause)):
                     state = 'completed'
-                elif re.search(r'正在|进行中|推进中|开发中|处理中|测试中|开始了|已开始', clause):
+                elif re.search(r'正在|进行中|推进中|开发中|处理中|测试中|开始了|已开始|(?<!现)在做|(?<!现)在弄', clause):
                     state = 'active'
                 if state:
                     milestone.update(status=state, statusBasis='meeting_reported',
@@ -121,12 +151,19 @@ async def attach(service, row, meeting, *, incoming=None, origin=None):
                 merged[field] = incoming.get(field)
         if incoming.get('phase') and incoming['phase'] != '待明确':
             merged['phase'] = incoming['phase']
-        nodes = {}
-        for m in [*old.get('milestones', []), *incoming.get('milestones', [])]:
-            title = milestone_title(m['title'])
-            if title and title not in nodes:
-                nodes[title] = {**m, 'title': title}
-        merged['milestones'] = list(nodes.values())
+        # A follow-up meeting may describe existing milestones in natural
+        # language. Do not turn those status sentences into new nodes (for
+        # example, “核心模块开发正在进行”); only the goal-definition meeting
+        # is allowed to establish the milestone baseline.
+        if not old.get('milestones') or meeting.id == row.meeting_id:
+            nodes = {}
+            for m in [*old.get('milestones', []), *incoming.get('milestones', [])]:
+                title = milestone_title(m['title'])
+                if title and title not in nodes:
+                    nodes[title] = {**m, 'title': title}
+            merged['milestones'] = list(nodes.values())
+        else:
+            merged['milestones'] = deepcopy(old['milestones'])
         if row.meeting_id == meeting.id:
             # 同场重分析可更新来源状态，但不清空上一轮没有重新返回的有效节点。
             merged.update(reviewPending=incoming.get('reviewPending', False), reviewRejected=False)

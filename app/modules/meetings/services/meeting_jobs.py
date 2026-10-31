@@ -91,6 +91,10 @@ class MeetingJobs:
             self.jobs.pop(key, None)
 
     async def run(self, job):
+        job['started'] = time.monotonic()
+        job['timings_ms'] = {'queue': round((job['started'] - job['updated']) * 1000)}
+        stage_started = job['started']
+        stage_name = 'preparation'
         job["status"] = "running"
         self.signal(job)
         try:
@@ -109,6 +113,10 @@ class MeetingJobs:
                     )
                 else:
                     def publish_progress(stage, percent, label):
+                        nonlocal stage_started, stage_name
+                        stamp = time.monotonic()
+                        job['timings_ms'][stage_name] = round((stamp - stage_started) * 1000)
+                        stage_name, stage_started = stage, stamp
                         job['progress'] = {'stage': stage, 'percent': max(job['progress']['percent'], percent), 'label': label}
                         job['updated'] = time.monotonic()
                         self.signal(job)
@@ -150,6 +158,9 @@ class MeetingJobs:
                 code, reason = 'meeting_analysis_busy', '服务繁忙，请稍后重试'
             job.update(status="failed", error=code, error_message=reason)
         finally:
+            stamp = time.monotonic()
+            job['timings_ms'][stage_name] = round((stamp - stage_started) * 1000)
+            job['timings_ms']['total'] = round((stamp - job['started']) * 1000)
             job["updated"] = time.monotonic()
             self.signal(job)
 
@@ -194,6 +205,7 @@ class MeetingJobs:
     def output(job):
         result = {key: job[key] for key in ["id", "revision", "operation", "status", "result", "error"]}
         if job.get('operation') == 'archive':
+            result['timingsMs'] = dict(job.get('timings_ms', {}))
             result['progress'] = job.get('progress', {'stage': 'queued', 'percent': 0, 'label': '等待整理'})
             result['errorMessage'] = job.get('error_message') or {
                 'meeting_revision_conflict': '会议原话已更新，请重新整理',

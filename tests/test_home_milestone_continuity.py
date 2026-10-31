@@ -173,3 +173,29 @@ async def test_live_progress_source_correction_invalidates_old_claim(client, app
     data = (await client.get('/api/v1/progress', headers=headers)).json()['data']
     assert not data['goals']
     assert data['pending'][0]['reason'] == '原话已变更，等待重新核对'
+
+
+async def test_goal_unlocks_next_stage_across_meetings_and_confirm_clears_pending(client, app):
+    headers = await account(client)
+    first = await sync_and_project(client, app, headers, 'stage-1',
+        f'交付目标是{TITLE}。里程碑包括需求范围确认、核心模块开发、双端联调、上线验收。')
+    goal = first['goals'][0]
+    assert goal['status'] == 'pending'
+    # 用户确认后不再停留在待确认；未提进度时节点保持待完成。
+    response = await client.post(f"/api/v1/progress/goals/{goal['id']}/confirm",
+        headers=headers, json={'version': goal['version']})
+    assert response.status_code == 200, response.text
+    confirmed = response.json()['data']
+    assert confirmed['status'] == 'active' and confirmed['confirmed'] is True
+    again = await client.post(f"/api/v1/progress/goals/{goal['id']}/confirm",
+        headers=headers, json={'version': goal['version']})
+    assert again.status_code == 200
+    second = await sync_and_project(client, app, headers, 'stage-2',
+        f'继续推进{TITLE}这个目标。需求范围确认已经完成了，核心模块开发正在进行。', with_goal=False)
+    assert [m['status'] for m in second['goals'][0]['milestones']] == ['completed', 'active', 'pending', 'pending']
+    third = await sync_and_project(client, app, headers, 'stage-3',
+        f'继续推进{TITLE}这个目标。核心模块开发做完了，双端联调已经联调完了，上线验收也通过了。', with_goal=False)
+    final = third['goals'][0]
+    assert final['id'] == goal['id']
+    assert [m['status'] for m in final['milestones']] == ['completed'] * 4
+    assert final['status'] == 'completed'

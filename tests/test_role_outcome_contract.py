@@ -80,7 +80,7 @@ async def test_archive_revision_change_does_not_send_second_automatic_report(cli
     async with app.state.database.sessions() as session:
         user=await session.scalar(select(User).where(User.email=='yan@example.com'))
         meeting=Meeting(id='one-auto-meeting',owner_id=user.id,client_id='one-auto',revision=1,
-            content={'ended':True,'utterances':[{'id':'u','raw':'需要验证风险','at':0}]})
+            content={'ended':True,'elapsed_ms':180000,'utterances':[{'id':'u','raw':'需要验证风险','at':0}]})
         session.add(meeting);await session.flush()
         archive=MeetingArchive(id='one-auto-archive',meeting_id=meeting.id,owner_id=user.id,revision=1,
             title='test',markdown='test',details={'summary':'test'})
